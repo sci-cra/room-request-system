@@ -2,7 +2,7 @@
 // DATA STORAGE & SAMPLE DATA
 // ==========================================
 // 🔗 วาง URL ของ Google Apps Script Web App ที่นี่ได้โดยตรง (หรือตั้งค่าผ่านหน้าเว็บปุ่ม "ตั้งค่า Google Sheet")
-const DEFAULT_GOOGLE_SCRIPT_URL = ""; 
+const DEFAULT_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzE8jr5mfl4LXdKTFy0MJ8K12OOi_DtXeqVru8AZX8rOHJOmqh4IhSv-45xXrL2-uHt3A/exec"; 
 
 const STORAGE_KEY = 'sci_room_requests_v1';
 const GOOGLE_API_KEY = 'google_sheet_api_url';
