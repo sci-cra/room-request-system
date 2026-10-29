@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบขอใช้ห้องนอกเวลาทำการ - คณะวิทยาศาสตร์</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Prompt / Sarabun -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Prompt', 'sans-serif'],
+            sarabun: ['Sarabun', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Prompt', sans-serif;
+    }
+    .print-only {
+      display: none;
+    }
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printArea, #printArea * {
+        visibility: visible;
+      }
+      #printArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        display: block !important;
+        font-family: 'Sarabun', sans-serif !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- TOP HEADER -->
+  <header class="bg-gradient-to-r from-teal-800 via-emerald-800 to-teal-900 text-white shadow-lg sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-20">
+        <!-- Logo & Title -->
+        <div class="flex items-center space-x-3">
+          <div class="w-12 h-12 bg-white/10 backdrop-blur rounded-xl border border-white/20 flex items-center justify-center text-teal-200 shadow-inner">
+            <i data-lucide="building-2" class="w-7 h-7"></i>
+          </div>
+          <div>
+            <div class="text-xs font-medium tracking-wide text-teal-200 uppercase">คณะวิทยาศาสตร์</div>
+            <h1 class="text-lg sm:text-xl font-bold leading-tight">ระบบขอใช้ห้องนอกเวลาทำการ</h1>
+            <p class="text-xs text-teal-100/80 hidden sm:block">เพื่อดำเนินการขอเปิดระบบไฟฟ้าและระบบปรับอากาศ</p>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="flex items-center space-x-1 sm:space-x-2 bg-black/20 p-1.5 rounded-xl border border-white/10">
+          <button id="navTabForm" onclick="switchTab('form')" class="px-3.5 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-1.5 bg-white text-teal-900 shadow">
+            <i data-lucide="file-plus-2" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">ยื่นคำขอ</span>
+          </button>
+          <button id="navTabTrack" onclick="switchTab('track')" class="px-3.5 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-1.5 text-teal-100 hover:text-white hover:bg-white/10">
+            <i data-lucide="search" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">ติดตามสถานะ</span>
+          </button>
+          <button id="navTabAdmin" onclick="switchTab('admin')" class="px-3.5 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-1.5 text-teal-100 hover:text-white hover:bg-white/10">
+            <i data-lucide="shield-check" class="w-4 h-4"></i>
+            <span>สำหรับเจ้าหน้าที่</span>
+            <span id="badgePendingCount" class="ml-1 px-1.5 py-0.5 text-xs bg-amber-400 text-amber-950 rounded-full font-bold hidden">0</span>
+          </button>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- ========================================== -->
+    <!-- TAB 1: FORM REQUEST (สำหรับผู้ขอใช้ห้อง) -->
+    <!-- ========================================== -->
+    <section id="viewForm" class="space-y-6">
+      
+      <!-- Notice Banner (ข้อความเตือนวันที่ 25) -->
+      <div class="bg-gradient-to-r from-rose-500/10 via-amber-500/10 to-orange-500/10 border-l-4 border-rose-500 p-4 sm:p-5 rounded-r-2xl shadow-sm">
+        <div class="flex items-start space-x-3">
+          <div class="p-2 bg-rose-500 text-white rounded-lg shadow-sm mt-0.5">
+            <i data-lucide="alert-circle" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-rose-900 text-base sm:text-lg">ข้อกำหนดการยื่นขอใช้ห้องนอกเวลาทำการ</h3>
+            <p class="text-rose-700 text-sm mt-0.5 font-medium">
+              กรุณาส่งแบบฟอร์ม <span class="underline font-bold text-rose-800">ภายในวันที่ 25 ของทุกเดือน</span> สำหรับการขอใช้พื้นที่ในเดือนถัดไป เพื่อดำเนินการขอเปิดระบบไฟฟ้าและระบบปรับอากาศ กรอกข้อมูลให้ครบถ้วนและตรวจสอบวัน เวลา และสถานที่ก่อนส่งแบบฟอร์มนะคะ
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Card -->
+      <div class="bg-white rounded-2xl shadow-md border border-slate-200/80 overflow-hidden">
+        <div class="bg-slate-50/80 px-6 py-5 border-b border-slate-200">
+          <h2 class="text-xl font-bold text-slate-800 flex items-center space-x-2">
+            <span class="p-2 bg-emerald-100 text-emerald-700 rounded-lg"><i data-lucide="clipboard-list" class="w-5 h-5"></i></span>
+            <span>แบบฟอร์มแจ้งขอใช้ห้องเรียน ห้องปฏิบัติการ สำนักงาน และห้องประชุม</span>
+          </h2>
+          <p class="text-sm text-slate-500 mt-1">กรุณากรอกข้อมูลที่มีเครื่องหมาย <span class="text-rose-500 font-bold">*</span> ให้ครบถ้วน</p>
+        </div>
+
+        <form id="roomRequestForm" onsubmit="handleFormSubmit(event)" class="p-6 sm:p-8 space-y-8">
+          
+          <!-- หมวดที่ 1: ข้อมูลผู้ขอใช้ห้อง -->
+          <div>
+            <div class="flex items-center space-x-2 text-slate-700 font-bold text-base mb-4 pb-2 border-b border-slate-100">
+              <span class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs">1</span>
+              <span>ข้อมูลผู้ขอใช้ห้อง</span>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <!-- 1. ชื่อ-นามสกุล -->
+              <div class="sm:col-span-2 lg:col-span-1">
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                  ชื่อ-นามสกุล ผู้ขอใช้ห้อง <span class="text-rose-500">*</span>
+                </label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <i data-lucide="user" class="w-4 h-4"></i>
+                  </div>
+                  <input type="text" id="requesterName" required placeholder="เช่น ผศ.ดร.สมชาย ใจดี" 
+                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm transition">
+                </div>
+              </div>
+
+              <!-- 2. ตำแหน่ง -->
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                  ตำแหน่ง <span class="text-rose-500">*</span>
+                </label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <i data-lucide="briefcase" class="w-4 h-4"></i>
+                  </div>
+                  <input type="text" id="requesterPosition" required placeholder="เช่น อาจารย์ประจำภาควิชาเคมี, เจ้าหน้าที่" 
+                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm transition">
+                </div>
+              </div>
+
+              <!-- 3. เบอร์โทรศัพท์ (ส่วนตัว) -->
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                  เบอร์โทรศัพท์ (ส่วนตัว) <span class="text-rose-500">*</span>
+                </label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <i data-lucide="phone" class="w-4 h-4"></i>
+                  </div>
+                  <input type="tel" id="requesterPhone" required placeholder="เช่น 081-234-5678" 
+                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm transition">
+                </div>
+                <span class="text-xs text-slate-400 mt-1 block">ใช้สำหรับค้นหาติดตามสถานะและประสานงานฉุกเฉิน</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- หมวดที่ 2: วัตถุประสงค์และประเภทห้อง -->
+          <div>
+            <div class="flex items-center space-x-2 text-slate-700 font-bold text-base mb-4 pb-2 border-b border-slate-100">
+              <span class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs">2</span>
+              <span>รายวิชาและประเภทห้อง</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <!-- 4. รายวิชา -->
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                  รายวิชา / กิจกรรม <span class="text-rose-500">*</span>
+                </label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <i data-lucide="book-open" class="w-4 h-4"></i>
+                  </div>
+                  <input type="text" id="courseName" required placeholder="เช่น วท.201 เคมีอินทรีย์ / โครงงานวิจัย ป.โท" 
+                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm transition">
+                </div>
+              </div>
+
+              <!-- 5. ประเภทห้องที่ขอใช้นอกเวลาทำการ -->
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                  ประเภทห้องที่ขอใช้นอกเวลาทำการ <span class="text-rose-500">*</span>
+                </label>
+                <select id="roomType" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm bg-white transition">
+                  <option value="" disabled selected>-- เลือกประเภทห้อง --</option>
+                  <option value="ห้องปฏิบัติการ">ห้องปฏิบัติการ (Lab)</option>
+                  <option value="ห้องเรียน">ห้องเรียน / บรรยาย</option>
+                  <option value="ห้องประชุม">ห้องประชุม</option>
+                  <option value="สำนักงาน">สำนักงาน</option>
+                  <option value="พื้นที่ส่วนกลาง/อื่นๆ">พื้นที่ส่วนกลาง / อื่นๆ</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- หมวดที่ 3: สถานที่ / อาคาร / ห้อง -->
+          <div>
+            <div class="flex items-center space-x-2 text-slate-700 font-bold text-base mb-4 pb-2 border-b border-slate-100">
+              <span class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs">3</span>
+              <span>สถานที่และหมายเลขห้อง</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <!-- 6. อาคาร/ชั้น/โซน -->
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                  อาคาร / ชั้น / โซน <span class="text-rose-500">*</span>
+                </label>
+                <select id="buildingZone" required onchange="toggleCustomBuilding(this.value)" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm bg-white transition">
+                  <option value="" disabled selected>-- เลือกอาคาร / ชั้น / โซน --</option>
+                  <option value="อาคารวิจัยและเรียนรู้เฉลิมพระเกียรติ 60 พรรษา เจ้าฟ้าจุฬาภรณ์ ชั้น 3 โซน A">
+                    1. อาคารวิจัยและเรียนรู้เฉลิมพระเกียรติ 60 พรรษา เจ้าฟ้าจุฬาภรณ์ ชั้น 3 โซน A
+                  </option>
+                  <option value="อาคารวิจัยและเรียนรู้เฉลิมพระเกียรติ 60 พรรษา เจ้าฟ้าจุฬาภรณ์ ชั้น 3 โซน C">
+                    2. อาคารวิจัยและเรียนรู้เฉลิมพระเกียรติ 60 พรรษา เจ้าฟ้าจุฬาภรณ์ ชั้น 3 โซน C
+                  </option>
+                  <option value="อาคารวิจัยและเรียนรู้เฉลิมพระเกียรติ 60 พรรษา เจ้าฟ้าจุฬาภรณ์ ชั้น 7 โซน C">
+                    3. อาคารวิจัยและเรียนรู้เฉลิมพระเกียรติ 60 พรรษา เจ้าฟ้าจุฬาภรณ์ ชั้น 7 โซน C
+                  </option>
+                  <option value="custom">อื่นๆ (ระบุเอง)</option>
+                </select>
+                <!-- ช่องพิมพ์ระบุอาคารอื่นๆ -->
+                <div id="customBuildingWrap" class="hidden mt-2.5">
+                  <input type="text" id="customBuildingInput" placeholder="โปรดระบุชื่ออาคาร / ชั้น / โซน ที่ต้องการ..." 
+                    class="w-full px-4 py-2 rounded-xl border border-amber-300 bg-amber-50/50 text-sm focus:ring-2 focus:ring-amber-500">
+                </div>
+              </div>
+
+              <!-- 7. หมายเลขห้อง/พื้นที่ -->
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                  หมายเลขห้อง / พื้นที่ <span class="text-rose-500">*</span>
+                </label>
+                <select id="roomNumber" required onchange="toggleCustomRoom(this.value)" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm bg-white transition">
+                  <option value="" disabled selected>-- เลือกหมายเลขห้อง / พื้นที่ --</option>
+                  <option value="3F L-102 ห้องปฏิบัติการเคมี (ห้องส้ม)">1. 3F L-102 ห้องปฏิบัติการเคมี (ห้องส้ม)</option>
+                  <option value="3F L-201, 3F L-202 ห้องเตรียมปฏิบัติการสารเคมี (ห้องฟ้า)">2. 3F L-201, 3F L-202 ห้องเตรียมปฏิบัติการสารเคมี (ห้องฟ้า)</option>
+                  <option value="3F L-101 ห้องปฏิบัติการจุลชีววิทยา (ห้องเขียว)">3. 3F L-101 ห้องปฏิบัติการจุลชีววิทยา (ห้องเขียว)</option>
+                  <option value="3F L-103 ห้องปฏิบัติการ Anatomy">4. 3F L-103 ห้องปฏิบัติการ Anatomy</option>
+                  <option value="3F L-105 ห้องปฏิบัติการเลี้ยงเซลล์">5. 3F L-105 ห้องปฏิบัติการเลี้ยงเซลล์</option>
+                  <option value="3F L-106 ห้องปฏิบัติการคอมพิวเตอร์">6. 3F L-106 ห้องปฏิบัติการคอมพิวเตอร์</option>
+                  <option value="3F L-104 ห้องปฏิบัติการวิจัยขั้นสูง (ห้องน้ำเงิน)">7. 3F L-104 ห้องปฏิบัติการวิจัยขั้นสูง (ห้องน้ำเงิน)</option>
+                  <option value="3F R-302 ห้องประชุมชั้น 3 (ห้องพักอาจารย์โซน C)">8. 3F R-302 ห้องประชุมชั้น 3 (ห้องพักอาจารย์โซน C)</option>
+                  <option value="7F R-227 ห้องประชุมชั้น 7">9. 7F R-227 ห้องประชุมชั้น 7</option>
+                  <option value="พื้นที่สำนักงานคณะวิทยาศาสตร์">10. พื้นที่สำนักงานคณะวิทยาศาสตร์</option>
+                  <option value="custom">อื่นๆ (ระบุเอง)</option>
+                </select>
+                <!-- ช่องพิมพ์ระบุห้องอื่นๆ -->
+                <div id="customRoomWrap" class="hidden mt-2.5">
+                  <input type="text" id="customRoomInput" placeholder="โปรดระบุหมายเลขห้อง หรือชื่อพื้นที่ที่ต้องการ..." 
+                    class="w-full px-4 py-2 rounded-xl border border-amber-300 bg-amber-50/50 text-sm focus:ring-2 focus:ring-amber-500">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- หมวดที่ 4: วันที่และเวลาที่ใช้ห้อง -->
+          <div>
+            <div class="flex items-center space-x-2 text-slate-700 font-bold text-base mb-4 pb-2 border-b border-slate-100">
+              <span class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs">4</span>
+              <span>วันและเวลาที่ขอเปิดระบบไฟฟ้า/ปรับอากาศ</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <!-- วันที่ใช้ห้อง -->
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                  วันที่ใช้ห้อง <span class="text-rose-500">*</span>
+                </label>
+                <div class="relative">
+                  <input type="date" id="dateOfUse" required 
+                    class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm transition">
+                </div>
+              </div>
+
+              <!-- เวลาเริ่ม -->
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                  เวลาเริ่มต้น (นอกเวลาทำการ) <span class="text-rose-500">*</span>
+                </label>
+                <input type="time" id="startTime" required value="17:00"
+                  class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm transition">
+              </div>
+
+              <!-- เวลาสิ้นสุด -->
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                  เวลาสิ้นสุด <span class="text-rose-500">*</span>
+                </label>
+                <input type="time" id="endTime" required value="20:00"
+                  class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm transition">
+              </div>
+            </div>
+          </div>
+
+          <!-- หมวดที่ 5: รายละเอียดเพิ่มเติมและเอกสารแนบ -->
+          <div>
+            <div class="flex items-center space-x-2 text-slate-700 font-bold text-base mb-4 pb-2 border-b border-slate-100">
+              <span class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs">5</span>
+              <span>รายละเอียดเพิ่มเติมและเอกสารประกอบ</span>
+            </div>
+
+            <div class="space-y-4">
+              <!-- รายละเอียดเพิ่มเติม (กรณีมี นศ.) -->
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                  รายละเอียดเพิ่มเติม <span class="text-slate-400 font-normal">(กรณีมีนักศึกษาร่วมทำวิจัย/ปฏิบัติงาน ให้ระบุชื่อ-รหัสนักศึกษามาด้วยค่ะ)</span>
+                </label>
+                <textarea id="additionalDetails" rows="3" placeholder="เช่น 1. น.ส.ใจดี เรียนดี รหัสนักศึกษา 65012345 (นศ.ปริญญาตรี ปี 4) ทำแล็บวิจัยเคมีอินทรีย์..." 
+                  class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm transition"></textarea>
+              </div>
+
+              <!-- กรณีมีเอกสารประกอบการขอใช้ห้อง (แนบไฟล์) -->
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                  เอกสารประกอบการขอใช้ห้อง <span class="text-slate-400 font-normal">(ถ้ามี เช่น โครงการ, ใบขออนุมัติวิจัย, รายชื่อ นศ. แนบไฟล์ PDF/รูปภาพ)</span>
+                </label>
+                <div class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:bg-slate-50 transition cursor-pointer" onclick="document.getElementById('attachmentFile').click()">
+                  <i data-lucide="upload-cloud" class="w-8 h-8 mx-auto text-slate-400 mb-2"></i>
+                  <span class="text-sm text-slate-600 block">คลิกเพื่อเลือกไฟล์ หรือลากไฟล์มาวางที่นี่</span>
+                  <span class="text-xs text-slate-400 block mt-1">รองรับไฟล์ PDF, Word, รูปภาพ (ขนาดไม่เกิน 10MB)</span>
+                  <input type="file" id="attachmentFile" class="hidden" onchange="handleFileSelect(this)">
+                </div>
+                <div id="filePreview" class="hidden mt-2 p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-sm text-emerald-800">
+                  <div class="flex items-center space-x-2">
+                    <i data-lucide="file-check" class="w-5 h-5 text-emerald-600"></i>
+                    <span id="fileName" class="font-medium truncate max-w-xs sm:max-w-md"></span>
+                    <span id="fileSize" class="text-xs text-emerald-600"></span>
+                  </div>
+                  <button type="button" onclick="clearFileAttachment()" class="text-rose-500 hover:text-rose-700 p-1">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ปุ่ม Submit -->
+          <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-end space-y-3 sm:space-y-0 sm:space-x-4">
+            <button type="reset" class="w-full sm:w-auto px-6 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-medium text-sm hover:bg-slate-100 transition">
+              ล้างข้อมูล
+            </button>
+            <button type="submit" class="w-full sm:w-auto px-8 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-sm shadow-md hover:shadow-lg transition transform active:scale-95 flex items-center justify-center space-x-2">
+              <i data-lucide="send" class="w-4 h-4"></i>
+              <span>ส่งแบบฟอร์มขอใช้ห้อง</span>
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: TRACK STATUS (สำหรับผู้ขอค้นหาสถานะ) -->
+    <!-- ========================================== -->
+    <section id="viewTrack" class="hidden space-y-6">
+      <div class="max-w-2xl mx-auto">
+        <!-- Search Box -->
+        <div class="bg-white rounded-2xl shadow-md border border-slate-200 p-6 sm:p-8 text-center space-y-4">
+          <div class="w-14 h-14 bg-emerald-100 text-emerald-700 rounded-2xl flex items-center justify-center mx-auto mb-2">
+            <i data-lucide="search-check" class="w-7 h-7"></i>
+          </div>
+          <h2 class="text-xl font-bold text-slate-800">ตรวจสอบสถานะคำขอใช้ห้อง</h2>
+          <p class="text-sm text-slate-500 max-w-md mx-auto">
+            กรอก <span class="font-semibold text-slate-700">เบอร์โทรศัพท์</span> ที่ใช้ยื่นคำขอ หรือ <span class="font-semibold text-slate-700">รหัสติดตามคำขอ (Request ID)</span>
+          </p>
+
+          <form onsubmit="handleTrackSearch(event)" class="flex flex-col sm:flex-row gap-3 mt-4">
+            <div class="relative flex-1">
+              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <i data-lucide="search" class="w-4 h-4"></i>
+              </div>
+              <input type="text" id="trackSearchInput" required placeholder="ใส่เบอร์โทร เช่น 0812345678 หรือ รหัสคำขอ เช่น REQ-..." 
+                class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 text-sm">
+            </div>
+            <button type="submit" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm shadow transition flex items-center justify-center space-x-2">
+              <i data-lucide="search" class="w-4 h-4"></i>
+              <span>ค้นหา</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- Search Results Container -->
+        <div id="trackResultContainer" class="mt-6 space-y-4">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: ADMIN PORTAL (สำหรับเจ้าหน้าที่/ตัวคุณ) -->
+    <!-- ========================================== -->
+    <section id="viewAdmin" class="hidden space-y-6">
+      
+      <!-- Admin Login Overlay if not unlocked -->
+      <div id="adminLoginGate" class="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-md border border-slate-200 text-center space-y-5">
+        <div class="w-16 h-16 bg-teal-100 text-teal-700 rounded-2xl flex items-center justify-center mx-auto">
+          <i data-lucide="lock" class="w-8 h-8"></i>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-800">เข้าสู่ระบบสำหรับเจ้าหน้าที่</h2>
+          <p class="text-xs text-slate-500 mt-1">เพื่อจัดการสถานะคำขอและจัดทำบันทึกข้อความ</p>
+        </div>
+        <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+          <div>
+            <input type="password" id="adminPinInput" placeholder="รหัสผ่านเจ้าหน้าที่ (ค่าเริ่มต้น: 1234)" 
+              class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-teal-500 text-sm text-center tracking-widest text-lg">
+          </div>
+          <button type="submit" class="w-full py-3 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-xl text-sm shadow transition">
+            เข้าสู่ระบบแอดมิน
+          </button>
+        </form>
+      </div>
+
+      <!-- Admin Dashboard Content (Unlocked) -->
+      <div id="adminDashboard" class="hidden space-y-6">
+        
+        <!-- Header & Top Actions -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <div>
+            <span class="text-xs font-semibold px-2.5 py-1 bg-teal-100 text-teal-800 rounded-lg">Admin Panel</span>
+            <h2 class="text-xl font-bold text-slate-800 mt-1">ระบบจัดการคำขอใช้ห้องนอกเวลาทำการ</h2>
+            <p class="text-xs text-slate-500">รวบรวมข้อมูลเพื่อจัดทำบันทึกข้อความเปิดระบบไฟฟ้าและระบบปรับอากาศ</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2.5">
+            <!-- Google Sheet Sync Status & Settings Button -->
+            <button onclick="openSyncModal()" id="btnSyncSettings" class="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm border border-slate-300 flex items-center space-x-1.5 transition">
+              <span id="syncIndicator" class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+              <span id="syncStatusLabel">ตั้งค่า Google Sheet</span>
+            </button>
+            <!-- Memo Generator Button -->
+            <button onclick="openMemoModal()" class="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-bold rounded-xl text-sm shadow flex items-center space-x-2 transition">
+              <i data-lucide="file-text" class="w-4 h-4"></i>
+              <span>สร้างร่างบันทึกข้อความ</span>
+            </button>
+            <!-- Export Excel Button -->
+            <button onclick="exportToCSV()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm shadow flex items-center space-x-2 transition">
+              <i data-lucide="download" class="w-4 h-4"></i>
+              <span>ส่งออก Excel/CSV</span>
+            </button>
+            <!-- Refresh Button -->
+            <button onclick="refreshData()" title="รีเฟรชข้อมูลจาก Google Sheet" class="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-sm border border-slate-300 transition">
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            </button>
+            <!-- Lock/Logout Button -->
+            <button onclick="lockAdmin()" class="px-3 py-2.5 border border-slate-300 hover:bg-slate-100 text-slate-600 font-medium rounded-xl text-sm transition">
+              <i data-lucide="log-out" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- STATS CARDS -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <!-- Total -->
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+            <div>
+              <p class="text-xs font-medium text-slate-400">คำขอทั้งหมด</p>
+              <h3 id="statTotal" class="text-2xl font-bold text-slate-800 mt-0.5">0</h3>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
+              <i data-lucide="layers" class="w-5 h-5"></i>
+            </div>
+          </div>
+          <!-- Pending -->
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-amber-200 bg-amber-50/20 flex items-center justify-between">
+            <div>
+              <p class="text-xs font-semibold text-amber-700">รอดำเนินการ</p>
+              <h3 id="statPending" class="text-2xl font-bold text-amber-600 mt-0.5">0</h3>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
+              <i data-lucide="clock" class="w-5 h-5"></i>
+            </div>
+          </div>
+          <!-- In Progress -->
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-blue-200 bg-blue-50/20 flex items-center justify-between">
+            <div>
+              <p class="text-xs font-semibold text-blue-700">กำลังทำบันทึกข้อความ</p>
+              <h3 id="statProgress" class="text-2xl font-bold text-blue-600 mt-0.5">0</h3>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
+              <i data-lucide="file-edit" class="w-5 h-5"></i>
+            </div>
+          </div>
+          <!-- Completed -->
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-emerald-200 bg-emerald-50/20 flex items-center justify-between">
+            <div>
+              <p class="text-xs font-semibold text-emerald-700">ดำเนินการเสร็จแล้ว</p>
+              <h3 id="statCompleted" class="text-2xl font-bold text-emerald-600 mt-0.5">0</h3>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+              <i data-lucide="check-circle" class="w-5 h-5"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-3 items-center justify-between">
+          <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            <!-- Filter Status -->
+            <select id="filterStatus" onchange="renderAdminTable()" class="px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white font-medium">
+              <option value="all">สถานะทั้งหมด</option>
+              <option value="รอดำเนินการ">🟡 รอดำเนินการ</option>
+              <option value="อยู่ระหว่างดำเนินการ">🔵 อยู่ระหว่างดำเนินการ / ทำบันทึกข้อความ</option>
+              <option value="ดำเนินการแล้ว">🟢 ดำเนินการแล้ว (ส่งเรื่องแล้ว)</option>
+              <option value="ไม่อนุมัติ">🔴 ไม่อนุมัติ</option>
+            </select>
+
+            <!-- Filter Month -->
+            <select id="filterMonth" onchange="renderAdminTable()" class="px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white font-medium">
+              <option value="all">ทุกช่วงเดือน</option>
+              <!-- Filled via JS -->
+            </select>
+          </div>
+
+          <!-- Search keyword -->
+          <div class="relative w-full md:w-72">
+            <input type="text" id="adminSearchQuery" oninput="renderAdminTable()" placeholder="ค้นหาชื่อ, ห้อง, รายวิชา, เบอร์โทร..." 
+              class="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <i data-lucide="search" class="w-4 h-4"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-slate-600">
+              <thead class="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
+                <tr>
+                  <th class="p-4 w-12 text-center">
+                    <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this.checked)" class="rounded text-teal-600 focus:ring-teal-500 w-4 h-4">
+                  </th>
+                  <th class="p-4">รหัส / วันที่ยื่น</th>
+                  <th class="p-4">ผู้ขอใช้ห้อง</th>
+                  <th class="p-4">ห้อง / อาคาร</th>
+                  <th class="p-4">วัน-เวลาที่ขอใช้</th>
+                  <th class="p-4">รายวิชา / วัตถุประสงค์</th>
+                  <th class="p-4 text-center">สถานะ</th>
+                  <th class="p-4 text-center">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="adminTableBody" class="divide-y divide-slate-100">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+          
+          <div id="adminEmptyState" class="hidden p-12 text-center text-slate-400">
+            <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+            <p>ไม่พบรายการคำขอตามเงื่อนไขที่เลือก</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL: SUCCESS SUBMISSION POPUP -->
+  <!-- ========================================== -->
+  <div id="successModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 text-center space-y-5 shadow-2xl border border-slate-100 transform transition-all scale-95 opacity-0 duration-200" id="successModalCard">
+      <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+        <i data-lucide="check" class="w-8 h-8 stroke-[3]"></i>
+      </div>
+      <div>
+        <h3 class="text-xl font-bold text-slate-800">ส่งแบบฟอร์มเรียบร้อยแล้ว!</h3>
+        <p class="text-sm text-slate-500 mt-1">ระบบได้รับข้อมูลคำขอใช้ห้องนอกเวลาทำการของท่านแล้ว</p>
+      </div>
+
+      <!-- Request Code Ticket -->
+      <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-1 text-left">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-400">รหัสคำขอ (Request ID):</span>
+          <span id="modalSuccessId" class="text-base font-bold text-teal-800 font-mono">REQ-202610-001</span>
+        </div>
+        <div class="text-xs text-slate-500">
+          ผู้ขอ: <span id="modalSuccessName" class="font-medium text-slate-700"></span>
+        </div>
+        <div class="text-xs text-slate-500">
+          ห้อง: <span id="modalSuccessRoom" class="font-medium text-slate-700"></span>
+        </div>
+        <div class="text-xs text-slate-500">
+          วัน-เวลา: <span id="modalSuccessDateTime" class="font-medium text-slate-700"></span>
+        </div>
+      </div>
+
+      <p class="text-xs text-slate-500">
+        💡 ท่านสามารถนำรหัสคำขอนี้ หรือเบอร์โทรศัพท์ ไปตรวจสอบสถานะได้ที่เมนู <span class="font-semibold text-emerald-700">"ติดตามสถานะ"</span>
+      </p>
+
+      <div class="pt-2 flex flex-col sm:flex-row gap-2">
+        <button onclick="copyToClipboard(document.getElementById('modalSuccessId').innerText, 'คัดลอกรหัสคำขอแล้ว')" class="w-full py-2.5 border border-slate-300 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition flex items-center justify-center space-x-1.5">
+          <i data-lucide="copy" class="w-4 h-4"></i>
+          <span>คัดลอกรหัส</span>
+        </button>
+        <button onclick="closeSuccessModal()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow transition">
+          ตกลง
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: AUTO-MEMO GENERATOR (สำหรับตัวคุณ ทำบันทึกข้อความ) -->
+  <!-- ========================================== -->
+  <div id="memoModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 hidden">
+    <div class="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+      
+      <!-- Modal Header -->
+      <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="p-2 bg-blue-500/20 rounded-xl text-blue-400">
+            <i data-lucide="file-text" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-base sm:text-lg">ร่างหนังสือบันทึกข้อความขอเปิดระบบไฟฟ้าและปรับอากาศ</h3>
+            <p class="text-xs text-slate-400">สร้างเนื้อหาและตารางสรุปสำหรับส่งไปยังฝ่ายอาคารสถานที่ / คณบดี</p>
+          </div>
+        </div>
+        <button onclick="closeMemoModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+      </div>
+
+      <!-- Action Toolbar -->
+      <div class="bg-slate-50 border-b border-slate-200 px-6 py-3 flex flex-wrap items-center justify-between gap-3 text-sm">
+        <div class="flex items-center space-x-2">
+          <span class="text-slate-600 font-medium">รอบประจำเดือน:</span>
+          <select id="memoMonthSelect" onchange="generateMemoContent()" class="px-3 py-1.5 rounded-lg border border-slate-300 font-semibold text-slate-700 bg-white">
+            <!-- Dynamic -->
+          </select>
+          <span id="memoCountBadge" class="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-bold rounded-full">0 รายการ</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button onclick="copyMemoText()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-xs shadow flex items-center space-x-1.5 transition">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span>คัดลอกข้อความทั้งหมด (ไปวางใน Word)</span>
+          </button>
+          <button onclick="printMemo()" class="px-3.5 py-1.5 bg-slate-700 hover:bg-slate-800 text-white font-semibold rounded-lg text-xs shadow flex items-center space-x-1.5 transition">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+            <span>พิมพ์ / PDF</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Body (Preview) -->
+      <div class="flex-1 overflow-y-auto p-6 sm:p-8 bg-slate-100">
+        <div id="memoContent" class="bg-white p-8 sm:p-10 rounded-xl shadow border border-slate-200 font-sarabun text-slate-800 leading-relaxed max-w-3xl mx-auto">
+          <!-- Filled dynamically by JS -->
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex justify-end">
+        <button onclick="closeMemoModal()" class="px-5 py-2 bg-slate-200 hover:bg-slate-300 font-semibold text-slate-700 rounded-xl text-sm transition">
+          ปิดหน้าต่าง
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: REQUEST DETAILS & STATUS EDITOR -->
+  <!-- ========================================== -->
+  <div id="detailsModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 space-y-6 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div>
+          <span id="detailTrackingId" class="text-xs font-mono font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md">REQ-000</span>
+          <h3 class="text-lg font-bold text-slate-800 mt-1">รายละเอียดคำขอใช้ห้อง</h3>
+        </div>
+        <button onclick="closeDetailsModal()" class="text-slate-400 hover:text-slate-600 p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div id="detailBody" class="space-y-4 text-sm">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Change Status Controls -->
+      <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">
+          อัปเดตสถานะการดำเนินการ (โดยเจ้าหน้าที่):
+        </label>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <button onclick="updateRequestStatusFromModal('รอดำเนินการ')" class="py-2 px-2 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold transition">
+            🟡 รอดำเนินการ
+          </button>
+          <button onclick="updateRequestStatusFromModal('อยู่ระหว่างดำเนินการ')" class="py-2 px-2 rounded-xl border border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs font-bold transition">
+            🔵 อยู่ระหว่างดำเนินการ
+          </button>
+          <button onclick="updateRequestStatusFromModal('ดำเนินการแล้ว')" class="py-2 px-2 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition">
+            🟢 ดำเนินการแล้ว
+          </button>
+          <button onclick="updateRequestStatusFromModal('ไม่อนุมัติ')" class="py-2 px-2 rounded-xl border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-800 text-xs font-bold transition">
+            🔴 ไม่อนุมัติ
+          </button>
+        </div>
+        
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">บันทึกข้อความ / หมายเหตุภายในเจ้าหน้าที่:</label>
+          <input type="text" id="adminNoteInput" placeholder="เช่น ส่งเรื่องหนังสือบันทึกข้อความเลขที่ วท 123/2569 แล้ว" 
+            class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-1 focus:ring-teal-500">
+        </div>
+      </div>
+
+      <div class="flex justify-end space-x-3 pt-2">
+        <button onclick="saveAdminNote()" class="px-5 py-2.5 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-xl text-sm transition">
+          บันทึกการแก้ไข
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl border border-slate-700 flex items-center space-x-3 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div id="toastIcon" class="text-emerald-400">
+      <i data-lucide="check-circle" class="w-5 h-5"></i>
+    </div>
+    <span id="toastMessage" class="text-sm font-medium">บันทึกข้อมูลเรียบร้อย</span>
+  </div>
+
+  <!-- PRINT CONTAINER (ONLY VISIBLE ON PRINT) -->
+  <div id="printArea" class="print-only"></div>
+
+  <!-- FOOTER -->
+  <footer class="bg-white border-t border-slate-200 mt-auto py-6">
+    <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400 space-y-1">
+      <p>ระบบบริหารจัดการคำขอใช้ห้องเรียน ห้องปฏิบัติการ และห้องประชุม นอกเวลาทำการ</p>
+      <p>คณะวิทยาศาสตร์ • อาคารวิจัยและเรียนรู้เฉลิมพระเกียรติ 60 พรรษา เจ้าฟ้าจุฬาภรณ์</p>
+    </div>
+  </footer>
+
+  <!-- ========================================== -->
+  <!-- MODAL: GOOGLE SHEET SYNC SETTINGS -->
+  <!-- ========================================== -->
+  <div id="syncModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 shadow-2xl border border-slate-200">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center">
+            <i data-lucide="sheet" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-slate-800">เชื่อมต่อ Google Sheets</h3>
+            <p class="text-xs text-slate-500">ซิงค์ข้อมูลคำขอให้วิ่งเข้า Google Sheet แบบ Real-time</p>
+          </div>
+        </div>
+        <button onclick="closeSyncModal()" class="text-slate-400 hover:text-slate-600 p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4 text-sm">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">
+            URL ของ Google Apps Script Web App:
+          </label>
+          <input type="url" id="googleScriptUrlInput" placeholder="https://script.google.com/macros/s/AKfycbx.../exec"
+            class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 font-mono">
+          <span class="text-[11px] text-slate-400 block mt-1">
+            นำ URL ที่ได้จากการกด "Deploy > Web App" ใน Google Sheets มาวางที่นี่
+          </span>
+        </div>
+
+        <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 space-y-2">
+          <div class="font-bold text-slate-700 flex items-center space-x-1.5">
+            <i data-lucide="info" class="w-4 h-4 text-emerald-600"></i>
+            <span>ข้อดีเมื่อเชื่อมต่อกับ Google Sheet:</span>
+          </div>
+          <ul class="list-disc list-inside space-y-1 text-slate-500">
+            <li>แม้ Google Sheet จะว่างเปล่า ระบบจะสร้างหัวตารางและจัดสีให้อัตโนมัติ</li>
+            <li>อาจารย์หรือ นศ. ยื่นผ่านมือถือ ข้อมูลจะวิ่งเข้า Google Sheet ทันที</li>
+            <li>ไฟล์ที่แนบมาจะถูกอัปโหลดไปเก็บใน Google Drive ของคุณโดยอัตโนมัติ</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+        <button type="button" onclick="testGoogleSheetConnection()" class="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold rounded-xl text-xs transition">
+          ทดสอบการเชื่อมต่อ
+        </button>
+        <div class="flex space-x-2">
+          <button type="button" onclick="closeSyncModal()" class="px-4 py-2 text-slate-500 hover:text-slate-700 font-semibold text-xs">
+            ยกเลิก
+          </button>
+          <button type="button" onclick="saveGoogleSheetSettings()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow transition">
+            บันทึกการเชื่อมต่อ
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="app.js"></script>
+</body>
+</html>
